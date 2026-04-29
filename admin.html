@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚙️ PSK 後台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans TC',sans-serif;background:#F5F4F0;color:#1a1a1a;min-height:100vh}
+:root{--g3:#1D9E75;--g4:#0F6E56;--sand:#f7f4ee;--warm:#b8854a;--r:10px}
+
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:210px;background:#1a1a1a;display:flex;flex-direction:column;z-index:100}
+.logo{padding:22px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.logo h1{font-size:15px;font-weight:700;color:#fff}
+.logo p{font-size:11px;color:rgba(255,255,255,.4);margin-top:3px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:13px 18px;color:rgba(255,255,255,.6);cursor:pointer;font-size:13px;border:none;background:none;width:100%;text-align:left;font-family:inherit;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(29,158,117,.2);color:#4ecba0;border-left:3px solid var(--g3)}
+.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:4px}
+.sidebar-footer a{color:rgba(255,255,255,.4);font-size:12px;text-decoration:none;padding:4px 0}
+.sidebar-footer a:hover{color:#fff}
+
+.main{margin-left:210px;padding:28px;min-height:100vh}
+.ph{margin-bottom:22px}
+.ph h2{font-size:20px;font-weight:700}
+.ph p{font-size:13px;color:#888;margin-top:3px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:var(--r);padding:18px;border:1px solid #E8E4DC}
+.stat-num{font-size:30px;font-weight:700;color:var(--g3)}
+.stat-label{font-size:12px;color:#888;margin-top:5px}
+
+.card{background:#fff;border-radius:var(--r);border:1px solid #E8E4DC;margin-bottom:18px;overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid #F0EBE3;display:flex;justify-content:space-between;align-items:center}
+.card-title{font-size:14px;font-weight:600}
+.card-body{padding:18px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 13px;text-align:left;font-size:11px;font-weight:600;color:#999;letter-spacing:.04em;background:#FAFAF7;border-bottom:1px solid #EEE8DC}
+td{padding:11px 13px;border-bottom:1px solid #F5F1EB;color:#444;vertical-align:middle}
+tr:last-child td{border:none}
+tr:hover td{background:#FDFCF9}
+
+.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;transition:all .15s}
+.btn-p{background:var(--g4);color:#fff}
+.btn-p:hover{background:var(--g3)}
+.btn-del{background:#FFF0EE;border:1px solid #FFCDC8;color:#C62828;padding:5px 11px}
+.btn-del:hover{background:#FFCDC8}
+.btn-ghost{background:#fff;border:1px solid #DDD;color:#666}
+.btn-ghost:hover{border-color:#999;color:#1a1a1a}
+.btn-export{background:var(--sand);border:1px solid #D8D0C0;color:#555;font-size:12px;padding:7px 14px}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.bp{background:#E8F7F1;color:var(--g4)}
+.bs{background:#FEF6EE;color:var(--warm)}
+
+.chart-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.chart-name{width:100px;font-size:13px;flex-shrink:0}
+.chart-bg{flex:1;height:7px;background:#EEE8DC;border-radius:4px}
+.chart-fg{height:7px;background:var(--g3);border-radius:4px;transition:width .6s}
+.chart-val{width:80px;text-align:right;font-size:12px;color:#888}
+
+.filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:5px 13px;border-radius:99px;border:1px solid #DDD;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#888;transition:all .15s}
+.chip.on{background:var(--g4);border-color:var(--g4);color:#fff}
+
+.pager{display:flex;align-items:center;gap:7px;margin-top:14px;justify-content:flex-end}
+.page-btn{padding:5px 13px;border:1px solid #DDD;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#888;font-family:inherit}
+.page-btn:hover{border-color:var(--g3);color:var(--g3)}
+.page-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:90%;max-width:420px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.15)}
+.modal-head{padding:18px 22px;border-bottom:1px solid #EEE;display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#aaa;line-height:1}
+.modal-body{padding:22px}
+
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--sand)}
+.login-card{background:#fff;border-radius:18px;padding:40px 32px;width:100%;max-width:380px;box-shadow:0 6px 32px rgba(0,0,0,.08)}
+.login-card h1{font-size:22px;font-weight:700;color:var(--g4);text-align:center;margin-bottom:6px}
+.login-card p{font-size:13px;color:#888;text-align:center;margin-bottom:24px}
+.input{width:100%;padding:11px 14px;border:1.5px solid #E0D8CC;border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:14px}
+.input:focus{border-color:var(--g3)}
+
+.toast{position:fixed;bottom:22px;right:22px;background:#1a1a1a;color:#fff;padding:11px 22px;border-radius:9px;font-size:13px;opacity:0;transition:opacity .25s;z-index:999}
+.toast.show{opacity:1}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:32px;height:32px;border:3px solid #EEE;border-top-color:var(--g3);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-wrap" style="display:none">
+  <div class="login-card">
+    <h1>☀️ PSK 後台</h1>
+    <p>輸入管理員 Token 登入</p>
+    <input class="input" type="password" id="token-input" placeholder="Admin Token" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn btn-p" style="width:100%;padding:12px;font-size:14px" onclick="login()">登入</button>
+    <div style="text-align:center;margin-top:14px"><a href="index.html" style="font-size:12px;color:#aaa;text-decoration:none">← 回測驗頁</a></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="sidebar">
+    <div class="logo"><h1>☀️ PSK 後台</h1><p>防曬人格測驗管理</p></div>
+    <button class="nav-item active" id="n-dashboard" onclick="go('dashboard')">📊 數據總覽</button>
+    <button class="nav-item" id="n-responses" onclick="go('responses')">📋 填答紀錄</button>
+    <div class="sidebar-footer">
+      <a href="index.html" target="_blank">↗ 測驗頁</a>
+      <a href="#" onclick="logout()">登出</a>
+    </div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="m-title"></h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+const API = window.PSK_API_BASE || 'https://your-backend.railway.app';
+let TOKEN = localStorage.getItem('psk_token') || '';
+let section = 'dashboard';
+let pfilt = 'all', sfilt = 'all', rpage = 1;
+
+const PMAP = { G:'🛡️ 全防守', R:'🌬️ 隨心派', C:'🔬 成分控', E:'🌿 護環境' };
+const SMAP = { bright:'N01 明亮色', natural:'N02 自然色', healthy:'N03 健康色', white:'白色款（純防曬）' };
+
+async function req(method, path, body) {
+  const r = await fetch(`${API}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function login() {
+  TOKEN = document.getElementById('token-input').value.trim();
+  if (!TOKEN) { toast('請輸入 Token'); return; }
+  try {
+    await req('GET', '/api/admin/stats');
+    localStorage.setItem('psk_token', TOKEN);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    go('dashboard');
+  } catch(e) { toast('❌ Token 錯誤'); TOKEN = ''; }
+}
+
+function logout() {
+  localStorage.removeItem('psk_token'); TOKEN = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function go(s) {
+  section = s;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('n-' + s);
+  if (el) el.classList.add('active');
+  load(s);
+}
+
+async function load(s) {
+  document.getElementById('main').innerHTML = '<div class="spin"></div>';
+  try {
+    if (s === 'dashboard') await renderDashboard();
+    else if (s === 'responses') await renderResponses();
+  } catch(e) {
+    document.getElementById('main').innerHTML = `<p style="color:#c00;padding:20px">❌ ${e.message}</p>`;
+  }
+}
+
+async function renderDashboard() {
+  const d = await req('GET', '/api/admin/stats');
+  const pCount = {}, sCount = {};
+  (d.byPersonality||[]).forEach(x => pCount[x.personality] = x.count);
+  (d.byShade||[]).forEach(x => sCount[x.shade] = x.count);
+
+  document.getElementById('main').innerHTML = `
+    <div class="ph"><h2>📊 數據總覽</h2><p>測驗填答統計</p></div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${d.total}</div><div class="stat-label">總填答次數</div></div>
+      <div class="stat-card"><div class="stat-num">${d.today}</div><div class="stat-label">今日填答</div></div>
+      <div class="stat-card"><div class="stat-num">${d.trend?.length || 0}</div><div class="stat-label">活躍天數（近14天）</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">防曬人格分佈</div></div>
+        <div class="card-body">
+          ${Object.entries(PMAP).map(([k,v]) => {
+            const c = pCount[k] || 0, pct = d.total ? Math.round(c/d.total*100) : 0;
+            return `<div class="chart-row"><div class="chart-name">${v}</div>
+              <div class="chart-bg"><div class="chart-fg" style="width:${pct}%"></div></div>
+              <div class="chart-val">${c} (${pct}%)</div></div>`;
+          }).join('')}
+          ${!d.total ? '<p style="text-align:center;color:#aaa;padding:16px;font-size:13px">尚無資料</p>' : ''}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">色號分佈</div></div>
+        <div class="card-body">
+          ${Object.entries(SMAP).map(([k,v]) => {
+            const c = sCount[k] || 0, pct = d.total ? Math.round(c/d.total*100) : 0;
+            return `<div class="chart-row"><div class="chart-name" style="font-size:12px">${v}</div>
+              <div class="chart-bg"><div class="chart-fg" style="width:${pct}%;background:var(--warm)"></div></div>
+              <div class="chart-val">${c} (${pct}%)</div></div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">最近填答</div></div>
+      <table>
+        <thead><tr><th>時間</th><th>防曬人格</th><th>色號結果</th></tr></thead>
+        <tbody>
+          ${(d.recent||[]).map(r => `
+            <tr>
+              <td style="color:#aaa;font-size:12px">${r.created_at}</td>
+              <td><span class="badge bp">${PMAP[r.personality]||r.personality}</span></td>
+              <td><span class="badge bs">${SMAP[r.shade]||r.shade}</span></td>
+            </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:20px">尚無資料</td></tr>'}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function renderResponses() {
+  const d = await req('GET', `/api/admin/responses?personality=${pfilt}&shade=${sfilt}&page=${rpage}&limit=30`);
+  document.getElementById('main').innerHTML = `
+    <div class="ph" style="display:flex;justify-content:space-between;align-items:start">
+      <div><h2>📋 填答紀錄</h2><p>共 ${d.total} 筆</p></div>
+      <div style="display:flex;gap:8px">
+        <a href="${API}/api/admin/export" download onclick="this.setAttribute('href','${API}/api/admin/export')" class="btn btn-export" id="export-btn">⬇ 匯出 CSV</a>
+        ${d.total ? `<button class="btn btn-del" onclick="clearAll()">🗑 清空</button>` : ''}
+      </div>
+    </div>
+    <div class="filter-bar">
+      <span style="font-size:12px;color:#aaa;align-self:center">人格：</span>
+      ${['all',...Object.keys(PMAP)].map(k => `<button class="chip${pfilt===k?' on':''}" onclick="pfilt='${k}';rpage=1;renderResponses()">${k==='all'?'全部':PMAP[k]}</button>`).join('')}
+    </div>
+    <div class="filter-bar">
+      <span style="font-size:12px;color:#aaa;align-self:center">色號：</span>
+      ${['all',...Object.keys(SMAP)].map(k => `<button class="chip${sfilt===k?' on':''}" onclick="sfilt='${k}';rpage=1;renderResponses()">${k==='all'?'全部':SMAP[k]}</button>`).join('')}
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>#</th><th>時間</th><th>人格</th><th>色號</th><th>IP</th><th></th></tr></thead>
+        <tbody>
+          ${d.data.map(r => `
+            <tr>
+              <td style="color:#ccc;font-size:11px">${r.id}</td>
+              <td style="color:#aaa;font-size:12px">${r.created_at}</td>
+              <td><span class="badge bp">${PMAP[r.personality]||r.personality}</span></td>
+              <td><span class="badge bs">${SMAP[r.shade]||r.shade}</span></td>
+              <td style="color:#ccc;font-size:11px">${(r.ip||'').substring(0,15)}</td>
+              <td><button class="btn btn-del" onclick="delOne(${r.id})">刪</button></td>
+            </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">尚無紀錄</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button class="page-btn" ${rpage<=1?'disabled':''} onclick="rpage--;renderResponses()">← 上頁</button>
+      <span style="font-size:12px;color:#aaa">第 ${rpage} / ${d.pages||1} 頁</span>
+      <button class="page-btn" ${rpage>=d.pages?'disabled':''} onclick="rpage++;renderResponses()">下頁 →</button>
+    </div>`;
+
+  // Fix export link with auth header (download via fetch)
+  document.getElementById('export-btn').onclick = async function(e) {
+    e.preventDefault();
+    try {
+      const r = await fetch(`${API}/api/admin/export`, { headers: { 'x-admin-token': TOKEN } });
+      const blob = await r.blob();
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'psk_responses.csv'; a.click();
+    } catch(e) { toast('匯出失敗'); }
+  };
+}
+
+async function delOne(id) {
+  if (!confirm('確定刪除？')) return;
+  await req('DELETE', `/api/admin/responses?id=${id}`);
+  toast('已刪除'); renderResponses();
+}
+
+async function clearAll() {
+  if (!confirm('確定清空全部紀錄？不可還原！')) return;
+  await req('DELETE', '/api/admin/responses');
+  toast('已清空'); renderResponses();
+}
+
+function openModal(title, body) {
+  document.getElementById('m-title').textContent = title;
+  document.getElementById('m-body').innerHTML = body;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// Init
+(async () => {
+  if (!TOKEN) { document.getElementById('login-screen').style.display = 'flex'; return; }
+  try {
+    await req('GET', '/api/admin/stats');
+    document.getElementById('app').style.display = 'block';
+    go('dashboard');
+  } catch(e) { document.getElementById('login-screen').style.display = 'flex'; }
+})();
+</script>
+</body>
+</html>
